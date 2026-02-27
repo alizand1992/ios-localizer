@@ -11,26 +11,26 @@ import chalk from 'chalk';
 export async function run() {
   showBanner();
 
-  // Step 1: Navigate to iOS project
-  showInfo('Navigate to your iOS project directory:');
-  const projectDir = await browseForDirectory();
-  console.log(chalk.dim(`\n  Selected: ${projectDir}\n`));
-
-  // Step 2: Detect localization files
-  const spinner = ora('Scanning for localization files...').start();
+  // Step 1 & 2: Navigate to iOS project and scan — retry if nothing found
   let localizationData;
-  try {
-    localizationData = await detectLocalizationFiles(projectDir);
-    spinner.stop();
-  } catch (err) {
-    spinner.fail('Failed to scan: ' + err.message);
-    process.exit(1);
-  }
+  while (true) {
+    showInfo('Navigate to your iOS project directory:');
+    const projectDir = await browseForDirectory();
+    console.log(chalk.dim(`\n  Selected: ${projectDir}\n`));
 
-  if (!localizationData || localizationData.length === 0) {
-    showError('No .lproj localization directories found in this project.');
-    showInfo('Make sure you selected the root of an iOS project.');
-    process.exit(1);
+    const spinner = ora('Scanning for localization files...').start();
+    try {
+      localizationData = await detectLocalizationFiles(projectDir);
+      spinner.stop();
+    } catch (err) {
+      spinner.fail('Failed to scan: ' + err.message);
+      process.exit(1);
+    }
+
+    if (localizationData && localizationData.length > 0) break;
+
+    showError('No .lproj localization directories found in this directory or any subdirectory.');
+    showInfo('Make sure you selected the root of an iOS project, then try again.\n');
   }
 
   // Step 3: Show found languages

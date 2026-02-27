@@ -3,7 +3,8 @@
     "allow": [
       "Bash(chmod +x:*)",
       "Bash(npm install:*)",
-      "Bash(npm show:*)"
+      "Bash(npm show:*)",
+      "Bash(node:*)"
     ]
   }
 }
