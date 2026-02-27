@@ -69,3 +69,7 @@ export function showError(message) {
 export function showInfo(message) {
   console.log(chalk.cyan('  → ') + message);
 }
+
+export function showGoodbye() {
+  console.log(chalk.dim('\n  Goodbye!\n'));
+}

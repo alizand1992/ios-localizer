@@ -3,8 +3,8 @@ import { detectLocalizationFiles } from './localization/detector.js';
 import { findMissingTranslations } from './localization/diff.js';
 import { initTranslator, translateBatch } from './translator.js';
 import { writeTranslations } from './writer.js';
-import { showBanner, showLanguageTable, showMissingTranslations, showSuccess, showError, showInfo } from './ui/display.js';
-import { loadSettings, showSettingsMenu } from './settings.js';
+import { showBanner, showLanguageTable, showMissingTranslations, showSuccess, showError, showInfo, showGoodbye } from './ui/display.js';
+import { loadSettings, saveSettings, showSettingsMenu } from './settings.js';
 import { select, checkbox } from '@inquirer/prompts';
 import ora from 'ora';
 import chalk from 'chalk';
@@ -32,7 +32,7 @@ export async function run() {
     });
 
     if (mainAction === 'exit') {
-      console.log('');
+      showGoodbye();
       process.exit(0);
     }
 
@@ -54,7 +54,11 @@ export async function run() {
     let localizationData;
     while (true) {
       showInfo('Navigate to your iOS project directory:');
-      const projectDir = await browseForDirectory();
+      const projectDir = await browseForDirectory(settings.lastPath);
+      if (projectDir === null) {
+        showGoodbye();
+        process.exit(0);
+      }
       console.log(chalk.dim(`\n  Selected: ${projectDir}\n`));
 
       const spinner = ora('Scanning for localization files...').start();
@@ -66,7 +70,10 @@ export async function run() {
         process.exit(1);
       }
 
-      if (localizationData && localizationData.length > 0) break;
+      if (localizationData && localizationData.length > 0) {
+        saveSettings({ ...settings, lastPath: projectDir });
+        break;
+      }
 
       showError('No .xcstrings files found in this directory or any subdirectory.');
       showInfo('Make sure you selected the root of an iOS project, then try again.\n');

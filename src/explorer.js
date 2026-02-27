@@ -4,8 +4,12 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 
-export async function browseForDirectory() {
-  let currentDir = os.homedir();
+export async function browseForDirectory(startDir) {
+  const fallback = os.homedir();
+  let currentDir =
+    startDir && fs.existsSync(startDir) && fs.statSync(startDir).isDirectory()
+      ? startDir
+      : fallback;
 
   while (true) {
     console.log(chalk.cyan('\n  Current directory: ') + chalk.white.bold(currentDir));
@@ -35,6 +39,8 @@ export async function browseForDirectory() {
       choices.push({ name: '   ' + dir, value: dir });
     }
 
+    choices.push({ name: chalk.red('✕  Exit'), value: '__EXIT__' });
+
     const answer = await select({
       message: 'Navigate to your iOS project directory:',
       choices,
@@ -45,6 +51,8 @@ export async function browseForDirectory() {
       return currentDir;
     } else if (answer === '__UP__') {
       currentDir = parentDir;
+    } else if (answer === '__EXIT__') {
+      return null;
     } else {
       currentDir = path.join(currentDir, answer);
     }
