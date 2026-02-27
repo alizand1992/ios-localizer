@@ -1,40 +1,28 @@
 /**
- * Parse a .strings file content into a Map of key -> value
+ * Parse an .xcstrings file (Xcode String Catalog — JSON format)
  * @param {string} content - File content
- * @returns {Map<string, string>}
+ * @returns {{ sourceLanguage: string, strings: object, version: string }}
  */
-export function parseStrings(content) {
-  const map = new Map();
-
-  // Remove block comments /* ... */
-  let cleaned = content.replace(/\/\*[\s\S]*?\*\//g, '');
-  // Remove line comments // ...
-  cleaned = cleaned.replace(/\/\/[^\n]*/g, '');
-
-  // Match "key" = "value"; patterns
-  // Handle escaped quotes inside strings
-  const regex = /"((?:[^"\\]|\\.)*)"\s*=\s*"((?:[^"\\]|\\.)*)"\s*;/g;
-  let match;
-  while ((match = regex.exec(cleaned)) !== null) {
-    const key = match[1].replace(/\\"/g, '"').replace(/\\\\/g, '\\');
-    const value = match[2].replace(/\\"/g, '"').replace(/\\\\/g, '\\').replace(/\\n/g, '\n');
-    map.set(key, value);
-  }
-
-  return map;
+export function parseXCStrings(content) {
+  const data = JSON.parse(content);
+  return {
+    sourceLanguage: data.sourceLanguage || 'en',
+    strings: data.strings || {},
+    version: data.version || '1.0',
+  };
 }
 
 /**
- * Serialize a Map of translations to .strings format
- * @param {Map<string, string>} translations
- * @returns {string}
+ * Collect all languages present in an .xcstrings strings object
+ * @param {object} strings - The parsed strings object
+ * @returns {string[]}
  */
-export function serializeStrings(translations) {
-  const lines = [];
-  for (const [key, value] of translations) {
-    const escapedKey = key.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-    const escapedValue = value.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n');
-    lines.push(`"${escapedKey}" = "${escapedValue}";`);
+export function getLanguages(strings) {
+  const langs = new Set();
+  for (const entry of Object.values(strings)) {
+    for (const lang of Object.keys(entry.localizations || {})) {
+      langs.add(lang);
+    }
   }
-  return lines.join('\n');
+  return [...langs].sort();
 }

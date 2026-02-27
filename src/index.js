@@ -33,11 +33,9 @@ export async function run() {
     showInfo('Make sure you selected the root of an iOS project, then try again.\n');
   }
 
-  // Step 3: Show found languages
-  showLanguageTable(localizationData);
-
-  // Step 4: Find missing translations
-  const { base, missing } = findMissingTranslations(localizationData);
+  // Step 3 & 4: Parse files and find missing translations
+  const { base, languages, missing } = findMissingTranslations(localizationData);
+  showLanguageTable(localizationData, languages, base);
   showInfo(`Base language: ${chalk.bold(base)}`);
   showMissingTranslations(missing);
 
@@ -92,7 +90,7 @@ export async function run() {
   let totalErrors = 0;
 
   for (const item of toTranslate) {
-    const fileSpinner = ora(`Translating ${item.lang} / ${item.stringsFile} (${item.missingKeys.length} keys)...`).start();
+    const fileSpinner = ora(`Translating ${item.lang} / ${item.xcstringsName} (${item.missingKeys.length} keys)...`).start();
 
     try {
       const translations = await translateBatch(
@@ -100,12 +98,12 @@ export async function run() {
         base,
         item.lang,
         (done, total) => {
-          fileSpinner.text = `Translating ${item.lang} / ${item.stringsFile}: ${done}/${total}`;
+          fileSpinner.text = `Translating ${item.lang} / ${item.xcstringsName}: ${done}/${total}`;
         }
       );
 
-      await writeTranslations(item.stringsFilePath, translations, true);
-      fileSpinner.succeed(`${item.lang} / ${item.stringsFile}: wrote ${translations.size} translation(s)`);
+      await writeTranslations(item.xcstringsPath, item.lang, translations);
+      fileSpinner.succeed(`${item.lang} / ${item.xcstringsName}: wrote ${translations.size} translation(s)`);
       totalWritten += translations.size;
     } catch (err) {
       fileSpinner.fail(`${item.lang} / ${item.stringsFile}: ${err.message}`);

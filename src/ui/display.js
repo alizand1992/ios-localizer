@@ -9,16 +9,19 @@ export function showBanner() {
   console.log('');
 }
 
-export function showLanguageTable(localizationData) {
-  console.log(chalk.bold('\n  Found languages:\n'));
+export function showLanguageTable(xcstringsFiles, languages, base) {
+  console.log(chalk.bold('\n  Found .xcstrings files:\n'));
+  for (const { name } of xcstringsFiles) {
+    console.log(chalk.white(`    ${name}`));
+  }
 
-  for (const { lang, stringsFiles } of localizationData) {
-    const fileList = stringsFiles.map(f => f.name).join(', ');
-    const isBase = lang === 'en' || lang === 'Base';
-    const langLabel = isBase
-      ? chalk.green.bold(`  ${lang.padEnd(12)}`)
+  console.log(chalk.bold('\n  Languages:\n'));
+  for (const lang of languages) {
+    const isBase = lang === base;
+    const label = isBase
+      ? chalk.green.bold(`  ${lang.padEnd(12)}`) + chalk.dim('(base)')
       : chalk.white(`  ${lang.padEnd(12)}`);
-    console.log(langLabel + chalk.dim(fileList));
+    console.log(label);
   }
   console.log('');
 }
@@ -42,7 +45,7 @@ export function showMissingTranslations(missingData) {
     const totalMissing = items.reduce((sum, i) => sum + i.missingKeys.length, 0);
     console.log(chalk.yellow(`  ${lang}`) + chalk.dim(` — ${totalMissing} missing key(s)`));
     for (const item of items) {
-      console.log(chalk.dim(`    ${item.stringsFile}: ${item.missingKeys.length} keys`));
+      console.log(chalk.dim(`    ${item.xcstringsName}: ${item.missingKeys.length} keys`));
     }
   }
   console.log('');
