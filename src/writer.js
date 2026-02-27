@@ -30,6 +30,7 @@ export async function writeTranslations(filePath, lang, translations) {
   }
 
   const tempPath = filePath + '.tmp';
-  fs.writeFileSync(tempPath, JSON.stringify(data, null, 2) + '\n', 'utf8');
+  const json = JSON.stringify(data, null, 2).replace(/": /g, '" : ') + '\n';
+  fs.writeFileSync(tempPath, json, 'utf8');
   fs.renameSync(tempPath, filePath);
 }
