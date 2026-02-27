@@ -1,4 +1,6 @@
-import { translate } from '@vitalets/google-translate-api';
+import { v2 } from '@google-cloud/translate';
+
+const { Translate } = v2;
 
 // Map iOS language codes to Google Translate codes
 const LANG_MAP = {
@@ -18,30 +20,34 @@ function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+let client;
+
+export function initTranslator(apiKey) {
+  client = new Translate({ key: apiKey });
+}
+
 /**
- * Translate a single text
+ * Translate a single text string.
  */
 export async function translateText(text, fromLang = 'en', toLang) {
+  if (!client) throw new Error('Translator not initialized. Set an API key in Settings first.');
+
   const from = toGoogleLang(fromLang);
   const to = toGoogleLang(toLang);
 
   try {
-    const result = await translate(text, { from, to });
-    return result.text;
+    const [translation] = await client.translate(text, { from, to });
+    return translation;
   } catch (err) {
     // Retry once after 1s
     await delay(1000);
-    try {
-      const result = await translate(text, { from, to });
-      return result.text;
-    } catch (retryErr) {
-      throw new Error(`Translation failed for "${text.substring(0, 30)}...": ${retryErr.message}`);
-    }
+    const [translation] = await client.translate(text, { from, to });
+    return translation;
   }
 }
 
 /**
- * Translate multiple texts with rate limiting
+ * Translate multiple items with progress reporting.
  * @param {Array<{key, baseValue}>} items
  * @param {string} fromLang
  * @param {string} toLang
@@ -55,24 +61,19 @@ export async function translateBatch(items, fromLang, toLang, onProgress) {
     const { key, baseValue } = items[i];
 
     try {
-      // Skip format strings that are mostly placeholders
+      // Keep bare format specifiers as-is (e.g. "%d", "%@")
       if (baseValue.trim().match(/^%[@diouxefgcs]$/)) {
-        results.set(key, baseValue); // keep as-is
+        results.set(key, baseValue);
       } else {
         const translated = await translateText(baseValue, fromLang, toLang);
         results.set(key, translated);
       }
     } catch (err) {
-      // On failure, use original value as fallback
+      // Fall back to the source value so the file stays valid
       results.set(key, baseValue);
     }
 
     if (onProgress) onProgress(i + 1, items.length);
-
-    // Rate limiting: 150ms between requests
-    if (i < items.length - 1) {
-      await delay(150);
-    }
   }
 
   return results;
