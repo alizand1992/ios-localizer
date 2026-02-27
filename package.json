@@ -1,0 +1,20 @@
+{
+  "name": "ios-localizer",
+  "version": "1.0.0",
+  "description": "CLI tool to detect and fill missing iOS app localizations using Google Translate",
+  "type": "module",
+  "bin": {
+    "ios-translate": "./bin/ios-translate.js"
+  },
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node bin/ios-translate.js"
+  },
+  "dependencies": {
+    "@inquirer/prompts": "^7.0.0",
+    "@vitalets/google-translate-api": "^9.2.1",
+    "chalk": "^5.3.0",
+    "glob": "^11.0.0",
+    "ora": "^8.0.1"
+  }
+}
