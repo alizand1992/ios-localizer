@@ -1,15 +1,22 @@
 # iOS Localizer
 
-A CLI tool that automatically detects missing translations in your iOS app's localization files and fills them in using Google Translate.
+A CLI tool that automatically detects missing translations in your iOS app's Xcode String Catalog files and fills them in using the Google Cloud Translation API.
 
 ## Features
 
 - **Interactive directory browser** — navigate to your iOS project without typing paths
-- **Auto-detection** — finds all `.lproj` directories and `.strings` files automatically
-- **Missing translation report** — compares all languages against your base language (`en`) and lists gaps
-- **Google Translate integration** — free, no API key required
-- **Safe writes** — creates `.strings.bak` backups before modifying any file
+- **Auto-detection** — finds all `.xcstrings` (Xcode String Catalog) files automatically
+- **Missing translation report** — compares all languages against your base language and lists gaps
+- **Google Cloud Translation** — powered by the official Google Translate API v2
+- **Safe writes** — creates `.xcstrings.bak` backups before modifying any file
 - **Selective translation** — choose which languages to translate or translate all at once
+- **Secure API key storage** — your API key is stored in the macOS Keychain, never on disk
+
+## Requirements
+
+- **macOS** (Keychain integration is macOS-only)
+- **Node.js** v18+
+- A **Google Cloud Translation API key** — see [Getting an API Key](#getting-an-api-key) below
 
 ## Installation
 
@@ -31,19 +38,31 @@ Or without installing globally:
 npm start
 ```
 
+## Getting an API Key
+
+This tool uses the [Google Cloud Translation API](https://cloud.google.com/translate), which requires an API key and is a paid service (with a free monthly quota).
+
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/apis/library/translate.googleapis.com)
+2. Enable the **Cloud Translation API** for your project
+3. Create an API key under **APIs & Services → Credentials**
+4. Add the key in the tool via **Settings → Update API key**
+
+Your API key is stored securely in the macOS Keychain and is never written to disk.
+
 ## How It Works
 
-1. **Navigate** to your iOS project root using the interactive file browser
-2. The tool scans for `*.lproj` directories (e.g., `en.lproj`, `fr.lproj`, `de.lproj`)
-3. It parses all `.strings` files and identifies keys present in `en.lproj` but missing in other languages
-4. You choose whether to translate all, select specific languages, or just view the report
-5. Missing translations are fetched from Google Translate and appended to the target `.strings` files
+1. **Configure** your Google Translate API key via the Settings menu (first-time setup)
+2. **Navigate** to your iOS project root using the interactive file browser
+3. The tool scans for `*.xcstrings` files (Xcode String Catalogs)
+4. It parses each catalog and identifies keys present in the source language but missing in other languages
+5. You choose to translate all missing entries, select specific languages, or return to the menu
+6. Missing translations are fetched from Google Translate and written back into the `.xcstrings` file
 
-## Supported Formats
+## Supported Format
 
-- `Localizable.strings` — main app strings
-- `InfoPlist.strings` — app name and permissions descriptions
-- Any other `.strings` files inside `.lproj` directories
+- `.xcstrings` — Xcode String Catalog (introduced in Xcode 15)
+
+> **Note:** This tool does not support the legacy `.strings` / `.lproj` format.
 
 ## iOS Language Codes
 
@@ -51,10 +70,12 @@ iOS uses language codes like `zh-Hans`, `zh-Hant`, `pt-BR` which are automatical
 
 ## Notes
 
-- Google Translate is free but rate-limited. Large projects may take a few minutes.
-- Translations are appended to files, never overwriting existing translations.
+- Google Cloud Translation API usage is billed per character after the free monthly quota.
+- Translations are merged into the existing catalog — existing translations are never overwritten.
 - Always review auto-translated strings before shipping — machine translations may need adjustment for tone and context.
-- Original files are backed up as `*.strings.bak` before any changes.
+- Original files are backed up as `*.xcstrings.bak` before any changes.
+- Format specifiers (e.g. `%@`, `%d`) are passed through untranslated.
+- Keys using plural variations are skipped (only simple `stringUnit` entries are translated).
 
 ## Project Structure
 
@@ -64,11 +85,12 @@ iOS uses language codes like `zh-Hans`, `zh-Hant`, `pt-BR` which are automatical
 ├── src/
 │   ├── index.js             # Main orchestration
 │   ├── explorer.js          # Interactive directory browser
-│   ├── translator.js        # Google Translate integration
-│   ├── writer.js            # .strings file writer
+│   ├── translator.js        # Google Cloud Translation API integration
+│   ├── writer.js            # .xcstrings file writer
+│   ├── settings.js          # API key management (macOS Keychain)
 │   ├── localization/
-│   │   ├── detector.js      # .lproj directory scanner
-│   │   ├── parser.js        # .strings file parser
+│   │   ├── detector.js      # .xcstrings file scanner
+│   │   ├── parser.js        # .xcstrings file parser
 │   │   └── diff.js          # Missing translation finder
 │   └── ui/
 │       └── display.js       # Terminal UI helpers
